@@ -17,25 +17,27 @@
   <script type="text/javascript" charset="utf-8">
     var objects = [{
       url:              'images/some.gif',
+      step:             0.05,                 // in radians
       height:           150,                  // in pixels
       center:           {left: 50, top: 50},  // percent values
       radius:           200,                  // in pixels
       baseRate:         0,
       clockwise:        true,
+      timeInterval:     30,                   // in milliseconds
       rateMultiplier:   12,
     }, {
       url:              'images/ian.jpg',
+      step:             0.1,
       height:           100,
       center:           {left: 70, top: 20},
       radius:           100,
-      baseRate:         1,
+      baseRate:         0.5,
       clockwise:        false,
-      rateMultiplier:   5,
+      timeInterval:     100,
+      rateMultiplier:   10,
     }];
 
     var totalRed = 0;       // value between 0 and 1, constantly updated
-    var step = 0.05;        // in radians
-    var timeInterval = 30;  // in milliseconds
 
 
     function rotateImage(obj, radians) {
@@ -51,14 +53,14 @@
 
       // Queue up the next rotation
       setTimeout(function() {
-        var adjustedStep = step * (obj.baseRate + obj.rateMultiplier * totalRed);
+        var adjustedStep = obj.step * (obj.baseRate + obj.rateMultiplier * totalRed);
 
         if (!obj.clockwise) {
           adjustedStep *= -1;
         }
 
         rotateImage(obj, radians - adjustedStep);
-      }, 30);
+      }, obj.timeInterval);
     }
 
     function createImages() {
