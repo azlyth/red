@@ -16,17 +16,18 @@
   </body>
   <script type="text/javascript" charset="utf-8">
     var objects = [{
-      url:              'images/some.gif',
-      step:             0.02,                                     // in radians
-      height:           150,                                      // in pixels
-      center:           {left: 50, top: 50},                      // percent values
-      radius:           250,                                      // in pixels
-      wobble:           {distance: 10, radians: 0, step: 0.15},
-      baseRate:         0.5,
-      clockwise:        true,
-      enableWobble:     true,
-      timeInterval:     20,                                       // in milliseconds
-      rateMultiplier:   12,
+      url:                    'images/some.gif',
+      step:                   0.02,                                     // in radians
+      height:                 150,                                      // in pixels
+      center:                 {left: 50, top: 50},                      // percent values
+      radius:                 250,                                      // in pixels
+      wobble:                 {distance: 10, radians: 0, step: 0.15},
+      baseRate:               0.5,
+      clockwise:              true,
+      enableWobble:           true,
+      timeInterval:           20,                                       // in milliseconds
+      rateMultiplier:         12,
+      initialRandomPosition:  true,
     }, {
       url:              'images/ian.jpg',
       step:             0.1,
@@ -39,11 +40,13 @@
       rateMultiplier:   10,
     }];
 
+
+    // To be played with
+    var all_default_to_random_position_on_circle = false;
+
+    // Not to be played with
     var totalRed = 0;       // value between 0 and 1, constantly updated
-
-    // Some other variables
-    var TAU = Math.PI * 2;
-
+    var TAU = Math.PI * 2;  // math stuff
 
     function rotateImage(obj, radians) {
       if (radians > TAU) radians -= TAU;
@@ -110,6 +113,10 @@
           }
         }
 
+        if (obj.initialRandomPosition === undefined) {
+          obj.initialRandomPosition = all_default_to_random_position_on_circle;
+        }
+
         // Dat closure, doe
         obj.img.load((function() {
           var _obj = obj;
@@ -122,7 +129,12 @@
             _obj.img.css('left', _obj.center.left);
             _obj.img.css('top', _obj.center.top);
 
-            rotateImage(_obj, 0);
+            var radians = 0;
+            if (_obj.initialRandomPosition) {
+              radians = Math.random() * TAU;
+            }
+
+            rotateImage(_obj, radians);
           }
         })());
       }
