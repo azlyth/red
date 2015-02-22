@@ -17,13 +17,15 @@
   <script type="text/javascript" charset="utf-8">
     var objects = [{
       url:              'images/some.gif',
-      step:             0.05,                 // in radians
-      height:           150,                  // in pixels
-      center:           {left: 50, top: 50},  // percent values
-      radius:           200,                  // in pixels
-      baseRate:         0,
+      step:             0.02,                                     // in radians
+      height:           150,                                      // in pixels
+      center:           {left: 50, top: 50},                      // percent values
+      radius:           250,                                      // in pixels
+      wobble:           {distance: 10, radians: 0, step: 0.15},
+      baseRate:         0.5,
       clockwise:        true,
-      timeInterval:     30,                   // in milliseconds
+      enableWobble:     true,
+      timeInterval:     20,                                       // in milliseconds
       rateMultiplier:   12,
     }, {
       url:              'images/ian.jpg',
@@ -39,11 +41,24 @@
 
     var totalRed = 0;       // value between 0 and 1, constantly updated
 
+    // Some other variables
+    var TAU = Math.PI * 2;
+
 
     function rotateImage(obj, radians) {
+      if (radians > TAU) radians -= TAU;
+
       // Calculate the position on the circle
-      var x_off = 200 * Math.sin(radians);
-      var y_off = 200 * Math.cos(radians);
+      // NOTE: Code repeated in order to use less cycles
+      if (obj.enableWobble) {
+        obj.wobble.radians += obj.wobble.step;
+        var radius = (obj.wobble.distance * Math.sin(obj.wobble.radians)) + obj.radius;
+        var x_off = radius * Math.sin(radians);
+        var y_off = radius * Math.cos(radians);
+      } else {
+        var x_off = obj.radius * Math.sin(radians);
+        var y_off = obj.radius * Math.cos(radians);
+      }
 
       // Apply the offset
       obj.img.offset({
@@ -75,6 +90,25 @@
         // Add it to the body
         document.body.appendChild(obj.img);
         obj.img = $(obj.img);
+
+        // Configure the wobble
+        if (!Boolean(obj.wobble)) {
+          obj.wobble = {
+            distance: 10,
+            radians: 0,
+            step: 0.15,
+          };
+        } else {
+          if (!obj.wobble.distance) {
+            obj.wobble.distance = 10;
+          }
+          if (!obj.wobble.radians) {
+            obj.wobble.radians = 0;
+          }
+          if (!obj.wobble.step) {
+            obj.wobble.step = 0.23;
+          }
+        }
 
         // Dat closure, doe
         obj.img.load((function() {
