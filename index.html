@@ -42,42 +42,50 @@
 
 
     // To be played with
+    var color = "red";
     var all_default_to_random_position_on_circle = false;
+    var webcam = {height: 620, width: 464};
 
     // Not to be played with
-    var totalRed = 0;       // value between 0 and 1, constantly updated
-    var TAU = Math.PI * 2;  // math stuff
+    var imageData;
+    var colorOffset;
+    var imageScore;
+    var colorValue;
+    var otherOffsets;
+    var averageColorValue;
+    var TAU = Math.PI * 2;                                    // math stuff
+    var normalImageScore = 0;                                 // value between 0 and 1, constantly updated
+    var totalPixels = webcam.width * webcam.height;
 
-    function rotateImage(obj, radians) {
-      if (radians > TAU) radians -= TAU;
+    function rotateImage(obj) {
+      if (obj.radians > TAU) obj.radians -= TAU;
 
       // Calculate the position on the circle
-      // NOTE: Code repeated in order to use less cycles
       if (obj.enableWobble) {
         obj.wobble.radians += obj.wobble.step;
-        var radius = (obj.wobble.distance * Math.sin(obj.wobble.radians)) + obj.radius;
-        var x_off = radius * Math.sin(radians);
-        var y_off = radius * Math.cos(radians);
+        obj.calculatedRadius = (obj.wobble.distance * Math.sin(obj.wobble.radians)) + obj.radius;
       } else {
-        var x_off = obj.radius * Math.sin(radians);
-        var y_off = obj.radius * Math.cos(radians);
+        obj.calculatedRadius = obj.radius;
       }
+      obj.x_off = obj.calculatedRadius * Math.sin(obj.radians);
+      obj.y_off = obj.calculatedRadius * Math.cos(obj.radians);
 
       // Apply the offset
       obj.img.offset({
-        top: obj.center.top + y_off,
-        left: obj.center.left + x_off,
+        top: obj.center.top + obj.y_off,
+        left: obj.center.left + obj.x_off,
       });
 
       // Queue up the next rotation
       setTimeout(function() {
-        var adjustedStep = obj.step * (obj.baseRate + obj.rateMultiplier * totalRed);
+        obj.adjustedStep = obj.step * (obj.baseRate + obj.rateMultiplier * normalImageScore);
 
         if (!obj.clockwise) {
-          adjustedStep *= -1;
+          obj.adjustedStep *= -1;
         }
 
-        rotateImage(obj, radians - adjustedStep);
+        obj.radians -= obj.adjustedStep;
+        rotateImage(obj);
       }, obj.timeInterval);
     }
 
@@ -129,12 +137,12 @@
             _obj.img.css('left', _obj.center.left);
             _obj.img.css('top', _obj.center.top);
 
-            var radians = 0;
+            _obj.radians = 0;
             if (_obj.initialRandomPosition) {
-              radians = Math.random() * TAU;
+              _obj.radians = Math.random() * TAU;
             }
 
-            rotateImage(_obj, radians);
+            rotateImage(_obj);
           }
         })());
       }
@@ -146,28 +154,32 @@
         obj.center.top = _window.height() * obj.center.top / 100;
     }
 
-    function keepSummingThoseReds() {
+    function analyzeImage() {
       Webcam.snap(function(uri, canvas, context) {
-        var data = context.getImageData(0, 0, 320, 240).data;
+        imageData = context.getImageData(0, 0, webcam.width, webcam.height).data;
 
-        // Sum up the red values
-        var sum = 0;
-        var max = 320 * 240 * 255;
-        for (var i = 0; i < data.length; i += 4) {
-          sum += data[i];
+        // Find how many pixels have the desired color as the highest of the three values
+        winningPixels = 0;
+        for (var i = 0, len = imageData.length; i < len; i += 4) {
+          colorValue = imageData[i + colorOffset];
+          if (colorValue > imageData[i + otherOffsets[0]] &&
+              colorValue > imageData[i + otherOffsets[1]]) {
+            winningPixels++;
+          }
         }
+        normalImageScore = winningPixels / totalPixels;
 
-        totalRed = sum / max;
-        setTimeout(keepSummingThoseReds, 50);
+        console.log(normalImageScore);
+        setTimeout(analyzeImage, 50);
       });
     }
 
     function readWebcam() {
       Webcam.set({
-        width: 620,
-        height: 464,
-        dest_width: 620,
-        dest_height: 464,
+        width: webcam.width,
+        height: webcam.height,
+        dest_width: webcam.width,
+        dest_height: webcam.height,
         image_format: 'jpeg',
         jpeg_quality: 1,
         force_flash: false
@@ -175,8 +187,19 @@
 
       Webcam.attach("#webcam");
 
+      if (color == "red") {
+        colorOffset = 0;
+        otherOffsets = [1, 2];
+      } else if (color == "green") {
+        colorOffset = 1;
+        otherOffsets = [0, 2];
+      } else if (color == "blue") {
+        colorOffset = 2;
+        otherOffsets = [0, 1];
+      }
+
       Webcam.on('live', function() {
-          setTimeout(keepSummingThoseReds, 1000);
+          setTimeout(analyzeImage, 1000);
       });
     }
 
